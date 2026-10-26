@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สื่อการเรียนรู้ 3D Interactive: เรื่อง เอกนาม (Monomials) ม.2</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Kanit -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- MathJax for TeX rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            900: '#064e3b',
+                        },
+                        darkbg: '#0b0f19',
+                        glass: 'rgba(17, 24, 39, 0.75)',
+                        glassborder: 'rgba(255, 255, 255, 0.1)',
+                    },
+                    fontFamily: {
+                        kanit: ['Kanit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-panel-glow {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.8);
+        }
+
+        /* Custom Sliders Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+            transition: all 0.15s ease-in-out;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #818cf8;
+        }
+
+        /* Neon Text Glow */
+        .text-glow-indigo {
+            text-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+        }
+        .text-glow-amber {
+            text-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+        }
+        .text-glow-emerald {
+            text-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+        }
+
+        /* 3D Canvas Container */
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            min-height: 480px;
+            position: relative;
+            cursor: grab;
+        }
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-white/10 px-4 lg:px-8 py-3.5">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-cube text-white text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-indigo-500/20 text-indigo-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-indigo-500/30">ม.2 คณิตศาสตร์</span>
+                        <span class="bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30">3D Interactive</span>
+                    </div>
+                    <h1 class="text-lg md:text-xl font-bold text-white tracking-wide">
+                        สำรวจโลกแห่ง <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 text-glow-indigo">"เอกนาม"</span> (Monomials 3D)
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Header Quick Actions -->
+            <div class="flex items-center gap-2">
+                <a href="#lab" class="px-3.5 py-1.5 rounded-lg bg-indigo-600/80 hover:bg-indigo-500 text-white text-xs font-medium transition-all flex items-center gap-1.5 shadow-md shadow-indigo-600/20">
+                    <i class="fa-solid fa-flask"></i> ห้องทดลอง 3D
+                </a>
+                <a href="#quiz" class="px-3.5 py-1.5 rounded-lg bg-amber-500/80 hover:bg-amber-400 text-slate-950 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/20">
+                    <i class="fa-solid fa-brain"></i> ท้าทายความคิด
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6 w-full space-y-6 flex-grow">
+
+        <!-- Pedagogical Banner / Info -->
+        <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-l-4 border-l-indigo-500">
+            <div class="flex items-start gap-3">
+                <div class="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 mt-0.5">
+                    <i class="fa-solid fa-circle-info text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-white text-sm">เป้าหมายการเรียนรู้เชิงสำรวจ (Exploration Target)</h3>
+                    <p class="text-xs text-slate-300 mt-0.5">
+                        เอกนามคือ นิพจน์ที่เขียนอยู่ในรูปการคูณของค่าคงตัวกับตัวแปรตั้งแต่หนึ่งตัวขึ้นไป โดยเลขชี้กำลังของตัวแปรแต่ละตัวเป็น <strong class="text-emerald-400">จำนวนเต็มบวกหรือศูนย์</strong> เท่านั้น ($Z = a \cdot X^n \cdot Y^m$)
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0 bg-slate-900/60 p-2 rounded-xl border border-white/5">
+                <i class="fa-solid fa-computer-mouse text-slate-400 text-xs"></i>
+                <span class="text-[11px] text-slate-400">คลิกลากหมุน 3D | สโครลเพื่อซูม</span>
+            </div>
+        </div>
+
+        <!-- 3D INTERACTIVE LAB SECTION -->
+        <section id="lab" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT CONTROLS & ANALYSIS (5 Cols) -->
+            <div class="lg:col-span-5 space-y-6 flex flex-col">
+                
+                <!-- Controls Card -->
+                <div class="glass-panel p-5 rounded-2xl space-y-5">
+                    <div class="flex justify-between items-center border-b border-white/10 pb-3">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-indigo-400"></i> แผงควบคุมตัวแปร (3D Controls)
+                        </h2>
+                        <!-- Non-monomial toggle -->
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggle-invalid" class="sr-only peer" onchange="toggleInvalidMode()">
+                            <div class="relative w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600"></div>
+                            <span class="ml-2 text-[11px] font-medium text-slate-400">โหมดทดลองข้อยกเว้น</span>
+                        </label>
+                    </div>
+
+                    <!-- Slider 1: Coefficient a -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-medium text-slate-300">สัมประสิทธิ์ ($a$):</label>
+                            <span id="val-a" class="bg-indigo-500/20 text-indigo-300 font-bold px-2.5 py-0.5 rounded-lg text-xs border border-indigo-500/30">2</span>
+                        </div>
+                        <input type="range" id="slider-a" min="-5" max="5" value="2" step="0.5" class="w-full">
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span>-5 (ลบ)</span>
+                            <span>0</span>
+                            <span>+5 (บวก)</span>
+                        </div>
+                    </div>
+
+                    <!-- Slider 2: Degree n of x -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-medium text-slate-300">เลขชี้กำลังของ $X$ ($n$):</label>
+                            <span id="val-n" class="bg-emerald-500/20 text-emerald-300 font-bold px-2.5 py-0.5 rounded-lg text-xs border border-emerald-500/30">2</span>
+                        </div>
+                        <input type="range" id="slider-n" min="0" max="4" value="2" step="1" class="w-full">
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span>0 (คงตัว)</span>
+                            <span>2</span>
+                            <span>4</span>
+                        </div>
+                    </div>
+
+                    <!-- Slider 3: Degree m of y -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-medium text-slate-300">เลขชี้กำลังของ $Y$ ($m$):</label>
+                            <span id="val-m" class="bg-purple-500/20 text-purple-300 font-bold px-2.5 py-0.5 rounded-lg text-xs border border-purple-500/30">1</span>
+                        </div>
+                        <input type="range" id="slider-m" min="0" max="4" value="1" step="1" class="w-full">
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span>0 (คงตัว)</span>
+                            <span>2</span>
+                            <span>4</span>
+                        </div>
+                    </div>
+
+                    <!-- Presets Selection -->
+                    <div class="pt-2 border-t border-white/10">
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">ชุดตัวอย่างพื้นผิวเรขาคณิต (3D Presets):</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="applyPreset(3, 0, 0)" class="text-xs bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-white border border-white/5 hover:border-indigo-500/40 p-2 rounded-xl text-left transition-all">
+                                🔹 เอกนามคงตัว ($3$)
+                            </button>
+                            <button onclick="applyPreset(1, 2, 2)" class="text-xs bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-white border border-white/5 hover:border-indigo-500/40 p-2 rounded-xl text-left transition-all">
+                                🔹 พาราโบลา 3D ($x^2y^2$)
+                            </button>
+                            <button onclick="applyPreset(1, 2, 1)" class="text-xs bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-white border border-white/5 hover:border-indigo-500/40 p-2 rounded-xl text-left transition-all">
+                                🔹 อานม้าสมมาตร ($x^2y$)
+                            </button>
+                            <button onclick="applyPreset(-2, 3, 1)" class="text-xs bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-white border border-white/5 hover:border-indigo-500/40 p-2 rounded-xl text-left transition-all">
+                                🔹 สัมประสิทธิ์ลบ ($-2x^3y$)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Breakdown Dashboard Card -->
+                <div class="glass-panel p-5 rounded-2xl space-y-3 border-l-4 border-l-emerald-500 flex-grow flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-chart-pie text-emerald-400"></i> วิเคราะห์องค์ประกอบเอกนาม
+                            </h2>
+                            <div id="validity-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-check"></i> เป็นเอกนาม
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="p-2.5 bg-slate-900/60 rounded-xl border border-white/5">
+                                <span class="text-slate-400 block mb-1">สัมประสิทธิ์ ($a$)</span>
+                                <span id="ana-coeff" class="text-lg font-bold text-indigo-400">2</span>
+                            </div>
+                            <div class="p-2.5 bg-slate-900/60 rounded-xl border border-white/5">
+                                <span class="text-slate-400 block mb-1">ดีกรีรวม ($n + m$)</span>
+                                <span id="ana-deg-total" class="text-lg font-bold text-emerald-400">3</span>
+                            </div>
+                            <div class="p-2.5 bg-slate-900/60 rounded-xl border border-white/5">
+                                <span class="text-slate-400 block mb-1">ดีกรีของ $X$</span>
+                                <span id="ana-deg-x" class="text-sm font-semibold text-slate-200">2</span>
+                            </div>
+                            <div class="p-2.5 bg-slate-900/60 rounded-xl border border-white/5">
+                                <span class="text-slate-400 block mb-1">ดีกรีของ $Y$</span>
+                                <span id="ana-deg-y" class="text-sm font-semibold text-slate-200">1</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Reasoning Box -->
+                    <div id="reasoning-box" class="p-3 bg-indigo-950/40 rounded-xl border border-indigo-500/20 text-xs text-indigo-200">
+                        <i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i>
+                        <span>เป็นเอกนามเนื่องจากเลขชี้กำลังของตัวแปร $x$ และ $y$ เป็นจำนวนเต็มบวกหรือศูนย์</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT 3D VIEWPORT & MATH DISPLAY (7 Cols) -->
+            <div class="lg:col-span-7 flex flex-col space-y-4">
+                
+                <!-- Algebraic Math Expression Display -->
+                <div class="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-3 bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/80 border border-indigo-500/20">
+                    <div>
+                        <span class="text-[10px] font-semibold text-indigo-300 uppercase tracking-widest block">นิพจน์พีชคณิตปัจจุบัน</span>
+                        <div id="math-formula-display" class="text-2xl sm:text-4xl font-extrabold text-amber-300 text-glow-amber tracking-wider py-1">
+                            2x²y
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-900/80 px-3 py-2 rounded-xl border border-white/10 text-xs text-slate-300">
+                        <i class="fa-solid fa-square-root-variable text-indigo-400"></i>
+                        <span>สมการ 3D: <strong class="text-white">$Z = a \cdot X^n \cdot Y^m$</strong></span>
+                    </div>
+                </div>
+
+                <!-- Three.js 3D Viewport Box -->
+                <div class="glass-panel-glow rounded-2xl overflow-hidden flex-grow flex flex-col relative min-h-[460px]">
+                    
+                    <!-- 3D Overlay Toolbar Controls -->
+                    <div class="absolute top-3 left-3 z-10 flex gap-2">
+                        <button onclick="resetCamera()" class="px-2.5 py-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white text-xs border border-white/10 backdrop-blur-md transition-all flex items-center gap-1.5 shadow-lg">
+                            <i class="fa-solid fa-rotate-left"></i> รีเซ็ตมุมกล้อง
+                        </button>
+                        <button onclick="toggleWireframe()" class="px-2.5 py-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white text-xs border border-white/10 backdrop-blur-md transition-all flex items-center gap-1.5 shadow-lg">
+                            <i class="fa-solid fa-border-all"></i> <span id="wireframe-btn-text">โหมดเส้นโครงรวด</span>
+                        </button>
+                    </div>
+
+                    <!-- Hover Coordinate Info Tooltip Overlay -->
+                    <div id="3d-tooltip" class="absolute bottom-3 left-3 z-10 hidden bg-slate-950/90 text-xs text-slate-200 p-2.5 rounded-xl border border-indigo-500/40 backdrop-blur-md shadow-xl space-y-0.5">
+                        <div class="text-[10px] text-indigo-400 font-semibold uppercase">พิกัดบนพื้นผิว 3D</div>
+                        <div>X: <span id="hover-x" class="text-emerald-400 font-mono font-bold">0.0</span> | Y: <span id="hover-y" class="text-purple-400 font-mono font-bold">0.0</span></div>
+                        <div>ค่า Z ($aX^nY^m$): <span id="hover-z" class="text-amber-400 font-mono font-bold">0.0</span></div>
+                    </div>
+
+                    <!-- Canvas Element Anchor -->
+                    <div id="canvas-container"></div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- QUIZ & ASSESSMENT SECTION -->
+        <section id="quiz" class="glass-panel p-6 rounded-2xl space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-white">แบบทดสอบประเมินความเข้าใจ 3D (Quiz)</h2>
+                        <p class="text-xs text-slate-400">วิเคราะห์เอกนาม สัมประสิทธิ์ และดีกรีของเอกนาม (ม.2)</p>
+                    </div>
+                </div>
+                <!-- Quiz Progress Metrics -->
+                <div class="flex items-center gap-3 bg-slate-900/60 px-4 py-2 rounded-xl border border-white/10">
+                    <span class="text-xs text-slate-400">คะแนนของคุณ:</span>
+                    <span id="quiz-score" class="text-lg font-bold text-amber-400">0 / 3</span>
+                </div>
+            </div>
+
+            <!-- Quiz Questions List -->
+            <div class="grid grid-cols-1 gap-6">
+                
+                <!-- Q1 -->
+                <div class="p-4 rounded-xl bg-slate-900/50 border border-white/5 space-y-3">
+                    <p class="font-semibold text-sm text-slate-200">
+                        1. นิพจน์พีชคณิตในข้อใดต่อไปนี้ <span class="text-rose-400 underline font-bold">ไม่เป็นเอกนาม</span>?
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                        <button onclick="answerQuiz(1, 'A', this)" class="q1-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ก</span>
+                            \( -9x^4y^2 \)
+                        </button>
+                        <button onclick="answerQuiz(1, 'B', this)" class="q1-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ข</span>
+                            \( 7x^{-3}y \)
+                        </button>
+                        <button onclick="answerQuiz(1, 'C', this)" class="q1-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ค</span>
+                            \( 15 \)
+                        </button>
+                        <button onclick="answerQuiz(1, 'D', this)" class="q1-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ง</span>
+                            \( \frac{2}{5}x y^3 \)
+                        </button>
+                    </div>
+                    <div id="q1-feedback" class="hidden p-3 rounded-xl text-xs"></div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="p-4 rounded-xl bg-slate-900/50 border border-white/5 space-y-3">
+                    <p class="font-semibold text-sm text-slate-200">
+                        2. เอกนาม \( -6x^3y^4z \) มี <span class="text-emerald-400 font-bold">ดีกรีของเอกนาม</span> เท่ากับเท่าใด?
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                        <button onclick="answerQuiz(2, 'A', this)" class="q2-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ก</span>
+                            3
+                        </button>
+                        <button onclick="answerQuiz(2, 'B', this)" class="q2-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ข</span>
+                            7
+                        </button>
+                        <button onclick="answerQuiz(2, 'C', this)" class="q2-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ค</span>
+                            8
+                        </button>
+                        <button onclick="answerQuiz(2, 'D', this)" class="q2-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ง</span>
+                            -6
+                        </button>
+                    </div>
+                    <div id="q2-feedback" class="hidden p-3 rounded-xl text-xs"></div>
+                </div>
+
+                <!-- Q3 -->
+                <div class="p-4 rounded-xl bg-slate-900/50 border border-white/5 space-y-3">
+                    <p class="font-semibold text-sm text-slate-200">
+                        3. เอกนามในข้อใดที่มี <span class="text-indigo-400 font-bold">สัมประสิทธิ์</span> เท่ากับ \( -4 \) และมี <span class="text-emerald-400 font-bold">ดีกรีของเอกนาม</span> เท่ากับ \( 6 \)?
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                        <button onclick="answerQuiz(3, 'A', this)" class="q3-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ก</span>
+                            \( 6x^{-4} \)
+                        </button>
+                        <button onclick="answerQuiz(3, 'B', this)" class="q3-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ข</span>
+                            \( -4x^2y^4 \)
+                        </button>
+                        <button onclick="answerQuiz(3, 'C', this)" class="q3-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ค</span>
+                            \( -6x^4 \)
+                        </button>
+                        <button onclick="answerQuiz(3, 'D', this)" class="q3-btn p-3 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-white/10 text-left transition-all flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">ง</span>
+                            \( -4x^6y \)
+                        </button>
+                    </div>
+                    <div id="q3-feedback" class="hidden p-3 rounded-xl text-xs"></div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-panel border-t border-white/10 py-5 text-center text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p>สื่อการสอน 3D Interactive เรื่อง เอกนาม (Monomials) - วิชาคณิตศาสตร์ ม.2</p>
+            <p class="text-slate-500">ขับเคลื่อนด้วย Three.js & Tailwind CSS (Single File Architecture)</p>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC & THREE.JS ENGINE -->
+    <script>
+        // DOM Elements
+        const sliderA = document.getElementById('slider-a');
+        const sliderN = document.getElementById('slider-n');
+        const sliderM = document.getElementById('slider-m');
+        const toggleInvalid = document.getElementById('toggle-invalid');
+
+        const valA = document.getElementById('val-a');
+        const valN = document.getElementById('val-n');
+        const valM = document.getElementById('val-m');
+
+        const anaCoeff = document.getElementById('ana-coeff');
+        const anaDegX = document.getElementById('ana-deg-x');
+        const anaDegY = document.getElementById('ana-deg-y');
+        const anaDegTotal = document.getElementById('ana-deg-total');
+        const validityBadge = document.getElementById('validity-badge');
+        const reasoningBox = document.getElementById('reasoning-box');
+
+        const mathFormulaDisplay = document.getElementById('math-formula-display');
+
+        // Three.js State Variables
+        let scene, camera, renderer, controls;
+        let surfaceMesh, wireframeMesh, gridHelper;
+        let raycaster, mouse;
+        let isWireframeVisible = false;
+
+        const GRID_SIZE = 6;
+        const GRID_SEGMENTS = 40;
+
+        // Initialize Three.js Scene
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // 1. Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0b0f19);
+            scene.fog = new THREE.FogExp2(0x0b0f19, 0.035);
+
+            // 2. Camera Setup
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(8, 10, 12);
+
+            // 3. Renderer Setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // 4. OrbitControls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.1; // Don't go below ground too much
+            controls.minDistance = 4;
+            controls.maxDistance = 30;
+
+            // 5. Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0x6366f1, 1.2);
+            dirLight1.position.set(10, 15, 10);
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0x10b981, 0.8);
+            dirLight2.position.set(-10, 10, -10);
+            scene.add(dirLight2);
+
+            // 6. Grid & Axis Helper
+            gridHelper = new THREE.GridHelper(GRID_SIZE * 2, 20, 0x4f46e5, 0x1e293b);
+            gridHelper.position.y = -0.01;
+            scene.add(gridHelper);
+
+            // 7. Initialize Surface Mesh
+            buildSurfaceGeometry();
+
+            // 8. Raycaster setup for tooltip hover
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            container.addEventListener('mousemove', onCanvasMouseMove);
+            container.addEventListener('mouseleave', () => {
+                document.getElementById('3d-tooltip').classList.add('hidden');
+            });
+
+            // Start Loop
+            animate();
+        }
+
+        // Build 3D Surface Mesh dynamically based on Function Z = a * X^n * Y^m
+        function buildSurfaceGeometry() {
+            if (surfaceMesh) scene.remove(surfaceMesh);
+            if (wireframeMesh) scene.remove(wireframeMesh);
+
+            const a = parseFloat(sliderA.value);
+            const isInvalid = toggleInvalid.checked;
+            let n = parseInt(sliderN.value);
+            let m = parseInt(sliderM.value);
+
+            // If invalid mode is toggled, force negative exponents for demonstration
+            if (isInvalid) {
+                n = -1;
+            }
+
+            const geometry = new THREE.PlaneGeometry(GRID_SIZE * 2, GRID_SIZE * 2, GRID_SEGMENTS, GRID_SEGMENTS);
+            geometry.rotateX(-Math.PI / 2);
+
+            const posAttribute = geometry.attributes.position;
+            const colors = [];
+
+            const colorMin = new THREE.Color(0xef4444); // Red (negative Z)
+            const colorMid = new THREE.Color(0x6366f1); // Indigo (zero Z)
+            const colorMax = new THREE.Color(0x10b981); // Emerald (positive Z)
+
+            for (let i = 0; i < posAttribute.count; i++) {
+                const x = posAttribute.getX(i);
+                const y = posAttribute.getZ(i); // In PlaneGeometry rotated, Z is original Y
+
+                let z = 0;
+                if (isInvalid) {
+                    // Formula with negative exponent: a * x^-1 * y^m
+                    // Avoid division by zero
+                    const safeX = Math.abs(x) < 0.2 ? (x >= 0 ? 0.2 : -0.2) : x;
+                    z = a * Math.pow(safeX, -1) * Math.pow(y, m);
+                } else {
+                    z = a * Math.pow(x, n) * Math.pow(y, m);
+                }
+
+                // Scale Z for pleasant 3D visual bounds
+                const clampedZ = Math.max(-6, Math.min(6, z * 0.3));
+                posAttribute.setY(i, clampedZ);
+
+                // Vertex Coloring based on height
+                const normalizedHeight = (clampedZ + 6) / 12; // 0 to 1
+                let vertexColor = new THREE.Color();
+                if (normalizedHeight < 0.5) {
+                    vertexColor.lerpColors(colorMin, colorMid, normalizedHeight * 2);
+                } else {
+                    vertexColor.lerpColors(colorMid, colorMax, (normalizedHeight - 0.5) * 2);
+                }
+                colors.push(vertexColor.r, vertexColor.g, vertexColor.b);
+            }
+
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            geometry.computeVertexNormals();
+
+            // Surface Material
+            const material = new THREE.MeshStandardMaterial({
+                vertexColors: true,
+                side: THREE.DoubleSide,
+                roughness: 0.3,
+                metalness: 0.2,
+                wireframe: false,
+                transparent: true,
+                opacity: 0.9
+            });
+
+            surfaceMesh = new THREE.Mesh(geometry, material);
+            scene.add(surfaceMesh);
+
+            // Wireframe Overlay
+            const wireframeMat = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                wireframe: true,
+                transparent: true,
+                opacity: isWireframeVisible ? 0.4 : 0.08
+            });
+            wireframeMesh = new THREE.Mesh(geometry, wireframeMat);
+            scene.add(wireframeMesh);
+        }
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Handle Window Resize
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        // Raycasting for Mouse Hover Tooltip
+        function onCanvasMouseMove(event) {
+            const container = document.getElementById('canvas-container');
+            const rect = container.getBoundingClientRect();
+
+            mouse.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(surfaceMesh);
+
+            const tooltip = document.getElementById('3d-tooltip');
+
+            if (intersects.length > 0) {
+                const point = intersects[0].point;
+                const a = parseFloat(sliderA.value);
+                const n = parseInt(sliderN.value);
+                const m = parseInt(sliderM.value);
+
+                const xVal = point.x.toFixed(1);
+                const yVal = point.z.toFixed(1);
+                let zVal = (a * Math.pow(point.x, n) * Math.pow(point.z, m)).toFixed(2);
+
+                document.getElementById('hover-x').textContent = xVal;
+                document.getElementById('hover-y').textContent = yVal;
+                document.getElementById('hover-z').textContent = zVal;
+
+                tooltip.classList.remove('hidden');
+            } else {
+                tooltip.classList.add('hidden');
+            }
+        }
+
+        // Reset Camera Position
+        function resetCamera() {
+            camera.position.set(8, 10, 12);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        }
+
+        // Toggle Wireframe Display
+        function toggleWireframe() {
+            isWireframeVisible = !isWireframeVisible;
+            if (wireframeMesh) {
+                wireframeMesh.material.opacity = isWireframeVisible ? 0.5 : 0.08;
+            }
+            document.getElementById('wireframe-btn-text').textContent = isWireframeVisible ? 'ซ่อนเส้นโครงรวด' : 'โหมดเส้นโครงรวด';
+        }
+
+        // Update All UI Displays & 3D Geometry
+        function updateAll() {
+            const a = parseFloat(sliderA.value);
+            const n = parseInt(sliderN.value);
+            const m = parseInt(sliderM.value);
+            const isInvalid = toggleInvalid.checked;
+
+            // Update UI Slider Value Labels
+            valA.textContent = a;
+            valN.textContent = isInvalid ? "-1" : n;
+            valM.textContent = m;
+
+            // Analysis Cards Update
+            anaCoeff.textContent = a;
+            anaDegX.textContent = isInvalid ? "-1" : n;
+            anaDegY.textContent = m;
+            anaDegTotal.textContent = isInvalid ? "ไม่ระบุ (ไม่เป็นเอกนาม)" : (n + m);
+
+            // Validity Badge & Reasoning
+            if (isInvalid) {
+                validityBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1";
+                validityBadge.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ไม่เป็นเอกนาม`;
+
+                reasoningBox.className = "p-3 bg-rose-950/40 rounded-xl border border-rose-500/20 text-xs text-rose-200";
+                reasoningBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400 mr-1"></i> <span><strong>เตือน:</strong> นิพจน์นี้ไม่เป็นเอกนาม เพราะมีเลขชี้กำลังของตัวแปร $x$ เป็นติดลบ ($-1$) ซึ่งผิดเงื่อนไขของเอกนาม</span>`;
+            } else {
+                validityBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1";
+                validityBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> เป็นเอกนาม`;
+
+                reasoningBox.className = "p-3 bg-indigo-950/40 rounded-xl border border-indigo-500/20 text-xs text-indigo-200";
+                reasoningBox.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i> <span>เป็นเอกนามเนื่องจากเลขชี้กำลังของตัวแปร $x$ ($n=${n}$) และ $y$ ($m=${m}$) เป็นจำนวนเต็มบวกหรือศูนย์</span>`;
+            }
+
+            // Math Expression Formatting
+            let formulaStr = "";
+            if (a === 0) {
+                formulaStr = "0";
+            } else {
+                if (a === 1 && (n > 0 || m > 0)) formulaStr += "";
+                else if (a === -1 && (n > 0 || m > 0)) formulaStr += "-";
+                else formulaStr += a;
+
+                if (isInvalid) {
+                    formulaStr += "x⁻¹";
+                } else {
+                    if (n === 1) formulaStr += "x";
+                    else if (n > 1) formulaStr += `x<sup>${n}</sup>`;
+                }
+
+                if (m === 1) formulaStr += "y";
+                else if (m > 1) formulaStr += `y<sup>${m}</sup>`;
+
+                if (!isInvalid && a !== 0 && n === 0 && m === 0) {
+                    formulaStr = `${a}`;
+                }
+            }
+            mathFormulaDisplay.innerHTML = formulaStr;
+
+            // Rebuild 3D Surface Mesh
+            buildSurfaceGeometry();
+        }
+
+        // Presets Function
+        function applyPreset(a, n, m) {
+            toggleInvalid.checked = false;
+            sliderA.value = a;
+            sliderN.value = n;
+            sliderM.value = m;
+            updateAll();
+        }
+
+        // Toggle Invalid Monomial Mode
+        function toggleInvalidMode() {
+            sliderN.disabled = toggleInvalid.checked;
+            updateAll();
+        }
+
+        // Listeners for Sliders
+        sliderA.addEventListener('input', updateAll);
+        sliderN.addEventListener('input', updateAll);
+        sliderM.addEventListener('input', updateAll);
+
+        // QUIZ LOGIC
+        let userScore = 0;
+        const answeredQuestions = new Set();
+
+        const quizData = {
+            1: {
+                correct: 'B',
+                feedback: '<b>ถูกต้อง!</b> \(7x^{-3}y\) <u>ไม่เป็นเอกนาม</u> เนื่องจากเลขชี้กำลังของตัวแปร \(x\) คือ \(-3\) ซึ่งเป็นจำนวนเต็มลบ (เอกนามกำหนดให้เลขชี้กำลังของตัวแปรต้องเป็นจำนวนเต็มบวกหรือศูนย์เท่านั้น)'
+            },
+            2: {
+                correct: 'C',
+                feedback: '<b>ถูกต้อง!</b> ดีกรีของเอกนามคือ ผลรวมของเลขชี้กำลังของตัวแปรทุกตัวในเอกนาม ในที่นี้คือ \(3 (\text{จาก } x) + 4 (\text{จาก } y) + 1 (\text{จาก } z) = 8\)'
+            },
+            3: {
+                correct: 'B',
+                feedback: '<b>ถูกต้อง!</b> เอกนาม \(-4x^2y^4\) มีสัมประสิทธิ์คือ \(-4\) และมีดีกรีรวมของเอกนามเท่ากับ \(2 + 4 = 6\)'
+            }
+        };
+
+        function answerQuiz(qNum, selectedOption, btnElement) {
+            const feedbackDiv = document.getElementById(`q${qNum}-feedback`);
+            const btns = document.querySelectorAll(`.q${qNum}-btn`);
+            const qInfo = quizData[qNum];
+
+            // Highlight selected button UI
+            btns.forEach(b => {
+                b.classList.remove('bg-emerald-600/30', 'border-emerald-500', 'bg-rose-600/30', 'border-rose-500');
+                b.classList.add('bg-slate-800/60', 'border-white/10');
+            });
+
+            feedbackDiv.classList.remove('hidden', 'bg-emerald-950/50', 'text-emerald-300', 'border-emerald-500/30', 'bg-rose-950/50', 'text-rose-300', 'border-rose-500/30');
+
+            if (selectedOption === qInfo.correct) {
+                btnElement.classList.add('bg-emerald-600/30', 'border-emerald-500');
+                feedbackDiv.classList.add('bg-emerald-950/50', 'text-emerald-300', 'border', 'border-emerald-500/30');
+                feedbackDiv.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i> ${qInfo.feedback}`;
+
+                if (!answeredQuestions.has(qNum)) {
+                    answeredQuestions.add(qNum);
+                    userScore++;
+                    document.getElementById('quiz-score').textContent = `${userScore} / 3`;
+                }
+            } else {
+                btnElement.classList.add('bg-rose-600/30', 'border-rose-500');
+                feedbackDiv.classList.add('bg-rose-950/50', 'text-rose-300', 'border', 'border-rose-500/30');
+                feedbackDiv.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400 mr-1.5"></i> <b>ยังไม่ถูกต้อง!</b> ลองทบทวนเงื่อนไขของสัมประสิทธิ์และเลขชี้กำลังอีกครั้ง`;
+            }
+
+            // Typeset MathJax dynamically
+            if (window.MathJax) {
+                MathJax.typesetPromise([feedbackDiv]);
+            }
+        }
+
+        // Window Load Initialization
+        window.onload = function() {
+            initThree();
+            updateAll();
+        };
+    </script>
+</body>
+</html>
